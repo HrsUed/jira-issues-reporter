@@ -135,7 +135,7 @@ module Jira
       raise RuntimeError unless response.is_a?(Net::HTTPSuccess)
 
       @tickets = JSON.parse(response.body)["issues"].sort do |a, b|
-        a['key'].to_i <=> b['key'].to_i
+        a['key'] <=> b['key']
       end
 
       puts "チケットがありません" and return if @tickets.empty?
