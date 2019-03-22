@@ -92,6 +92,8 @@ module Jira
         http.request(req)
       end
 
+      raise RuntimeError unless response.is_a?(Net::HTTPSuccess)
+
       @epics = JSON.parse(response.body)['values'].sort do |a, b|
         a['id'].to_i <=> b['id'].to_i
       end
@@ -129,6 +131,8 @@ module Jira
       response = Net::HTTP.start(url.host, url.port, use_ssl: url.scheme == 'https') do |http|
         http.request(req)
       end
+
+      raise RuntimeError unless response.is_a?(Net::HTTPSuccess)
 
       @tickets = JSON.parse(response.body)["issues"].sort do |a, b|
         a['key'].to_i <=> b['key'].to_i
