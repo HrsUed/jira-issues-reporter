@@ -176,20 +176,33 @@ module Jira
         printf "%7s, %s, %s, %2s, %s\n", ticket["key"], ticket_status.mb_rjust(6, ' '), assignee.mb_rjust(14, ' '), sp, ticket["fields"]["summary"]
       end
 
-      puts "-" * 40
+      big_separater = "=" * 40
+      small_separater = "-" * 10
+
+      puts big_separater
       puts "チケット合計：#{count[:all]}件"
+
+      printf "%s%s%s\n", small_separater, "状態別", small_separater
       count[:status].each do |k, v|
-        printf " (内 %s：%2d件)\n", k.to_s.mb_rjust(6, ' '), v
+        printf " %s：%2d件\n", k.to_s.mb_rjust(6, ' '), v
       end
+
+      printf "%s%s%s\n", small_separater, "担当別", small_separater
       count[:assignee].each do |k, v|
-        printf " (内 %s：%2d件)\n", k.to_s.mb_rjust(14, ' '), v
+        printf " %s：%2d件\n", k.to_s.mb_rjust(14, ' '), v
       end
+
+      puts big_separater
       puts "SP合計：#{sp_sum[:all]}"
+
+      printf "%s%s%s\n", small_separater, "状態別", small_separater
       sp_sum[:status].each do |k, v|
-        printf " (内 %s：%2d)\n", k.to_s.mb_rjust(6, ' '), v
+        printf " %s：%2d\n", k.to_s.mb_rjust(6, ' '), v
       end
+
+      printf "%s%s%s\n", small_separater, "担当別", small_separater
       sp_sum[:assignee].each do |k, v|
-        printf " (内 %s：%2d)\n", k.to_s.mb_rjust(14, ' '), v
+        printf " %s：%2d\n", k.to_s.mb_rjust(14, ' '), v
       end
     end
   end
