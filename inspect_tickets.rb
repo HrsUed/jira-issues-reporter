@@ -153,7 +153,7 @@ module Jira
       puts "=" * 40
       puts "チケット一覧"
       puts "-" * 40
-      printf "%7s, %s, %2s, %s\n", "番号", "状態".mb_rjust(6, ' '), "SP", "チケット名"
+      printf "%7s, %s, %s, %2s, %s\n", "番号", "状態".mb_rjust(6, ' '), "担当者".mb_rjust(14, ' '), "SP", "チケット名"
       puts "=" * 40
 
       count = { all: 0 }
@@ -169,7 +169,7 @@ module Jira
         sp_sum[ticket_status.to_sym] = sp_sum[ticket_status.to_sym].to_i + sp
         sp_sum[:all] += sp
 
-        printf "%7s, %s, %2s, %s\n", ticket["key"], ticket_status.mb_rjust(6, ' '), sp, ticket["fields"]["summary"]
+        printf "%7s, %s, %s, %2s, %s\n", ticket["key"], ticket_status.mb_rjust(6, ' '), ticket["fields"]["assignee"]["displayName"].mb_rjust(14, ' '), sp, ticket["fields"]["summary"]
       end
 
       puts "-" * 40
