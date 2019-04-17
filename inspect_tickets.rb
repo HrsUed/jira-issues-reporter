@@ -1,4 +1,12 @@
 module Jira
+  def self.get_valid_statuses
+    {
+      todo: "To Do",
+      doing: "進行中",
+      closed: "完了",
+    }
+  end
+
   class User
     attr_writer :email
     attr_writer :token
@@ -123,7 +131,9 @@ module Jira
       e_id
     end
 
-    def get_tickets(board_id, epic_id)
+    def get_tickets(board_id, epic_id, statuses: %i( todo doing ))
+      display_statuses = Jira.get_valid_statuses.values_at(*statuses)
+
       url = URI.parse("https://innova.atlassian.net/rest/agile/latest/board/#{board_id}/epic/#{epic_id}/issue")
       req = Net::HTTP::Get.new(url)
       req.basic_auth @email, @token
@@ -143,25 +153,44 @@ module Jira
       puts "=" * 40
       puts "チケット一覧"
       puts "-" * 40
-      printf "%7s, %2s, %s\n", "番号", "SP", "チケット名"
+      printf "%7s, %s, %2s, %s\n", "番号", "状態".mb_rjust(6, ' '), "SP", "チケット名"
       puts "=" * 40
 
-      count = 0
-      sp_sum = 0
+      count = { all: 0 }
+      sp_sum = { all: 0 }
       @tickets.each do |ticket|
-        next if ticket["fields"]["status"]["name"] == "完了"
+        ticket_status = ticket["fields"]["status"]["name"]
+        next unless display_statuses.include?(ticket_status)
 
-        count += 1
+        count[ticket_status.to_sym] = count[ticket_status.to_sym].to_i + 1
+        count[:all] += 1
+
         sp = ticket["fields"]["customfield_10004"].to_i
-        sp_sum += sp
+        sp_sum[ticket_status.to_sym] = sp_sum[ticket_status.to_sym].to_i + sp
+        sp_sum[:all] += sp
 
-        printf "%7s, %2s, %s\n", ticket["key"], sp, ticket["fields"]["summary"]
+        printf "%7s, %s, %2s, %s\n", ticket["key"], ticket_status.mb_rjust(6, ' '), sp, ticket["fields"]["summary"]
       end
 
       puts "-" * 40
-      puts "チケット合計：#{count}件"
-      puts "SP合計：#{sp_sum}"
+      puts "チケット合計：#{count[:all]}件"
+      display_statuses.each do |s|
+        printf " (内 %s：%2d件)\n", s.mb_rjust(6, ' '), count[s.to_sym]
+      end
+      puts "SP合計：#{sp_sum[:all]}"
+      display_statuses.each do |s|
+        printf " (内 %s：%2d)\n", s.mb_rjust(6, ' '), sp_sum[s.to_sym]
+      end
     end
+  end
+end
+
+class String
+  # See https://www.techscore.com/blog/2012/12/25/ruby-%E3%81%A7%E3%83%9E%E3%83%AB%E3%83%81%E3%83%90%E3%82%A4%E3%83%88%E6%96%87%E5%AD%97%E3%81%AB%E5%AF%BE%E3%81%97%E3%81%A6-ljust-%E3%81%97%E3%81%A6%E3%82%82%E7%B6%BA%E9%BA%97%E3%81%AB%E6%8F%83/
+  def mb_rjust(width, padding=' ')
+    output_width = each_char.map{|c| c.bytesize == 1 ? 1 : 2}.reduce(0, &:+)
+    padding_size = [0, width - output_width].max
+    padding * padding_size + self
   end
 end
 
@@ -171,6 +200,21 @@ def valid_id(id)
   else
     true
   end
+end
+
+def choice_display_status
+  statuses = []
+  available_statuses = Jira.get_valid_statuses.to_a
+
+  puts ""
+  puts "表示するチケット状態の番号を選択してください。複数選択の場合はカンマで区切ってください。未選択はすべて選択したことになります。"
+  available_statuses.each_with_index do |s, idx|
+    puts "[#{idx}] #{s[1]}"
+  end
+  print "=> "
+  choices = gets.chomp.split(",").map(&:to_i).delete_if { |x| x >= available_statuses.length || x < 0 }
+  statuses = available_statuses.values_at(*choices).map { |s| s[0] }
+  statuses == [] ? available_statuses.map { |s| s[0] } : statuses
 end
 
 system("clear")
@@ -203,4 +247,5 @@ jira_user.get_epics(b_id)
 e_id = jira_user.read_epic
 return "正しいidを選択してください。" unless valid_id(e_id)
 
-jira_user.get_tickets(b_id, e_id)
+statuses = choice_display_status
+jira_user.get_tickets(b_id, e_id, statuses: statuses)
