@@ -190,6 +190,21 @@ def valid_id(id)
   end
 end
 
+def choice_display_status
+  statuses = []
+  available_statuses = Jira.get_valid_statuses.to_a
+
+  puts ""
+  puts "表示するチケット状態の番号を選択してください。複数選択の場合はカンマで区切ってください。未選択はすべて選択したことになります。"
+  available_statuses.each_with_index do |s, idx|
+    puts "[#{idx}] #{s[1]}"
+  end
+  print "=> "
+  choices = gets.chomp.split(",").map(&:to_i).delete_if { |x| x >= available_statuses.length || x < 0 }
+  statuses = available_statuses.values_at(*choices).map { |s| s[0] }
+  statuses == [] ? available_statuses.map { |s| s[0] } : statuses
+end
+
 system("clear")
 begin
   file = File.open("./token.txt", "r")
@@ -221,3 +236,4 @@ e_id = jira_user.read_epic
 return "正しいidを選択してください。" unless valid_id(e_id)
 
 jira_user.get_tickets(b_id, e_id)
+statuses = choice_display_status
