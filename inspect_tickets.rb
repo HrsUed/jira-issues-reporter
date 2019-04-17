@@ -1,4 +1,12 @@
 module Jira
+  def self.get_valid_statuses
+    {
+      todo: "To Do",
+      doing: "進行中",
+      closed: "完了",
+    }
+  end
+
   class User
     attr_writer :email
     attr_writer :token
