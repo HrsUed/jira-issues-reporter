@@ -247,5 +247,5 @@ jira_user.get_epics(b_id)
 e_id = jira_user.read_epic
 return "正しいidを選択してください。" unless valid_id(e_id)
 
-jira_user.get_tickets(b_id, e_id)
 statuses = choice_display_status
+jira_user.get_tickets(b_id, e_id, statuses: statuses)
