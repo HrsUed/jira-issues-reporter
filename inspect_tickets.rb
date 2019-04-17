@@ -131,7 +131,9 @@ module Jira
       e_id
     end
 
-    def get_tickets(board_id, epic_id)
+    def get_tickets(board_id, epic_id, statuses: %i( todo doing ))
+      display_statuses = Jira.get_valid_statuses.values_at(*statuses)
+
       url = URI.parse("https://sample.atlassian.net/rest/agile/latest/board/#{board_id}/epic/#{epic_id}/issue")
       req = Net::HTTP::Get.new(url)
       req.basic_auth @email, @token
@@ -151,24 +153,34 @@ module Jira
       puts "=" * 40
       puts "チケット一覧"
       puts "-" * 40
-      printf "%7s, %2s, %s\n", "番号", "SP", "チケット名"
+      printf "%7s, %s, %2s, %s\n", "番号", "状態".mb_rjust(6, ' '), "SP", "チケット名"
       puts "=" * 40
 
-      count = 0
-      sp_sum = 0
+      count = { all: 0 }
+      sp_sum = { all: 0 }
       @tickets.each do |ticket|
-        next if ticket["fields"]["status"]["name"] == "完了"
+        ticket_status = ticket["fields"]["status"]["name"]
+        next unless display_statuses.include?(ticket_status)
 
-        count += 1
+        count[ticket_status.to_sym] = count[ticket_status.to_sym].to_i + 1
+        count[:all] += 1
+
         sp = ticket["fields"]["customfield_10004"].to_i
-        sp_sum += sp
+        sp_sum[ticket_status.to_sym] = sp_sum[ticket_status.to_sym].to_i + sp
+        sp_sum[:all] += sp
 
-        printf "%7s, %2s, %s\n", ticket["key"], sp, ticket["fields"]["summary"]
+        printf "%7s, %s, %2s, %s\n", ticket["key"], ticket_status.mb_rjust(6, ' '), sp, ticket["fields"]["summary"]
       end
 
       puts "-" * 40
-      puts "チケット合計：#{count}件"
-      puts "SP合計：#{sp_sum}"
+      puts "チケット合計：#{count[:all]}件"
+      display_statuses.each do |s|
+        printf " (内 %s：%2d件)\n", s.mb_rjust(6, ' '), count[s.to_sym]
+      end
+      puts "SP合計：#{sp_sum[:all]}"
+      display_statuses.each do |s|
+        printf " (内 %s：%2d)\n", s.mb_rjust(6, ' '), sp_sum[s.to_sym]
+      end
     end
   end
 end
