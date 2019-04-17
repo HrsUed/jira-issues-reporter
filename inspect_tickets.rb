@@ -156,30 +156,40 @@ module Jira
       printf "%7s, %s, %s, %2s, %s\n", "番号", "状態".mb_rjust(6, ' '), "担当者".mb_rjust(14, ' '), "SP", "チケット名"
       puts "=" * 40
 
-      count = { all: 0 }
-      sp_sum = { all: 0 }
+      count = { all: 0, status: {}, assignee: {} }
+      sp_sum = { all: 0, status: {}, assignee: {} }
       @tickets.each do |ticket|
         ticket_status = ticket["fields"]["status"]["name"]
         next unless display_statuses.include?(ticket_status)
 
-        count[ticket_status.to_sym] = count[ticket_status.to_sym].to_i + 1
+        assignee = ticket["fields"]["assignee"]["displayName"]
+
+        count[:status][ticket_status.to_sym] = count[:status][ticket_status.to_sym].to_i + 1
+        count[:assignee][assignee.to_sym] = count[:assignee][assignee.to_sym].to_i + 1
         count[:all] += 1
 
         sp = ticket["fields"]["customfield_10004"].to_i
-        sp_sum[ticket_status.to_sym] = sp_sum[ticket_status.to_sym].to_i + sp
+        sp_sum[:status][ticket_status.to_sym] = sp_sum[:status][ticket_status.to_sym].to_i + sp
+        sp_sum[:assignee][assignee.to_sym] = sp_sum[:assignee][assignee.to_sym].to_i + sp
         sp_sum[:all] += sp
 
-        printf "%7s, %s, %s, %2s, %s\n", ticket["key"], ticket_status.mb_rjust(6, ' '), ticket["fields"]["assignee"]["displayName"].mb_rjust(14, ' '), sp, ticket["fields"]["summary"]
+        printf "%7s, %s, %s, %2s, %s\n", ticket["key"], ticket_status.mb_rjust(6, ' '), assignee.mb_rjust(14, ' '), sp, ticket["fields"]["summary"]
       end
 
       puts "-" * 40
       puts "チケット合計：#{count[:all]}件"
-      display_statuses.each do |s|
-        printf " (内 %s：%2d件)\n", s.mb_rjust(6, ' '), count[s.to_sym]
+      count[:status].each do |k, v|
+        printf " (内 %s：%2d件)\n", k.to_s.mb_rjust(6, ' '), v
+      end
+      count[:assignee].each do |k, v|
+        printf " (内 %s：%2d件)\n", k.to_s.mb_rjust(14, ' '), v
       end
       puts "SP合計：#{sp_sum[:all]}"
-      display_statuses.each do |s|
-        printf " (内 %s：%2d)\n", s.mb_rjust(6, ' '), sp_sum[s.to_sym]
+      sp_sum[:status].each do |k, v|
+        printf " (内 %s：%2d)\n", k.to_s.mb_rjust(6, ' '), v
+      end
+      sp_sum[:assignee].each do |k, v|
+        printf " (内 %s：%2d)\n", k.to_s.mb_rjust(14, ' '), v
       end
     end
   end
