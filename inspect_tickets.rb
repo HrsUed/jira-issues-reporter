@@ -162,7 +162,11 @@ module Jira
         ticket_status = ticket["fields"]["status"]["name"]
         next unless display_statuses.include?(ticket_status)
 
-        assignee = ticket["fields"]["assignee"]["displayName"]
+        if ticket["fields"]["assignee"]
+          assignee = ticket["fields"]["assignee"]["displayName"] || "名無し"
+        else
+          assignee = "名無し"
+        end
 
         count[:status][ticket_status.to_sym] = count[:status][ticket_status.to_sym].to_i + 1
         count[:assignee][assignee.to_sym] = count[:assignee][assignee.to_sym].to_i + 1
