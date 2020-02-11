@@ -246,7 +246,7 @@ end
 
 system("clear")
 begin
-  file = File.open("./token.txt", "r")
+  file = File.open("./config/token.txt", "r")
 rescue
   puts "認証情報ファイル'token.txt'を準備してください。"
   return
