@@ -10,6 +10,7 @@ module Jira
   class User
     attr_writer :email
     attr_writer :token
+    attr_writer :repo
     attr_writer :boards
     attr_writer :board_ids
     attr_writer :epics
@@ -21,17 +22,19 @@ module Jira
     require "openssl"
     require "json"
 
-    def initialize(email, token)
+    def initialize(email, token, repo)
       @email = email
       @token = token
+      @repo = repo
       @boards = []
       @board_ids = []
       @epics = []
       @epic_ids = []
     end
 
-    def self.read_token(email, token)
+    def self.read_token(email, token, repo)
       puts "JIRAアカウント情報を入力してください。" if email.nil? || email == "" || token.nil? || token == ""
+      puts "JIRAリポジトリドメインを入力してください。" if repo.nil? || repo == ""
 
       if email.nil? || email == ""
         print "email:"
@@ -43,16 +46,21 @@ module Jira
         token = gets.chomp
       end
 
-      if email == "" || token == ""
+      if repo.nil? || repo == ""
+        print "Repository domain:"
+        repo = gets.chomp
+      end
+
+      if email == "" || token == "" || repo == ""
         puts "正しく入力してください。"
         read_token
       end
 
-      self.new(email, token)
+      self.new(email, token, repo)
     end
 
     def get_boards
-      url = URI.parse("https://sample.atlassian.net/rest/agile/latest/board")
+      url = URI.parse("https://#{@repo}/rest/agile/latest/board")
       req = Net::HTTP::Get.new(url)
       req.basic_auth @email, @token
 
@@ -92,7 +100,7 @@ module Jira
     end
 
     def get_epics(board_id)
-      url = URI.parse("https://sample.atlassian.net/rest/agile/latest/board/#{board_id}/epic")
+      url = URI.parse("https://#{@repo}/rest/agile/latest/board/#{board_id}/epic")
       req = Net::HTTP::Get.new(url)
       req.basic_auth @email, @token
 
@@ -134,7 +142,7 @@ module Jira
     def get_tickets(board_id, epic_id, statuses: %i( todo doing ))
       display_statuses = Jira.get_valid_statuses.values_at(*statuses)
 
-      url = URI.parse("https://sample.atlassian.net/rest/agile/latest/board/#{board_id}/epic/#{epic_id}/issue")
+      url = URI.parse("https://#{@repo}/rest/agile/latest/board/#{board_id}/epic/#{epic_id}/issue")
       req = Net::HTTP::Get.new(url)
       req.basic_auth @email, @token
 
@@ -264,7 +272,22 @@ end
 
 file.close
 
-jira_user = Jira::User.read_token(email, token)
+begin
+  file = File.open("./config/repo.txt", "r")
+rescue
+  puts "リポジトリファイル'repo.txt'を準備してください。"
+  return
+end
+
+repo = ""
+
+file.each_line(chomp: true) do |line|
+  repo = line
+end
+
+file.close
+
+jira_user = Jira::User.read_token(email, token, repo)
 
 jira_user.get_boards
 b_id = jira_user.read_board
